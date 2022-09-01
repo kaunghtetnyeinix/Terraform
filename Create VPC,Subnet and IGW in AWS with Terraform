@@ -1,5 +1,6 @@
 provider "aws" {
   region="us-east-1"
+  #
 }
 resource "aws_vpc" "Boon_VPC_Prod" {
   cidr_block       = "10.0.0.0/16"
@@ -25,3 +26,6 @@ resource "aws_internet_gateway" "gw" {
     Name = "Boon_IGW_Prod"
   }
 }
+
+#Need to create IAM User in AWS with Programmtic Access
+#Need to install AWS CLI in Local System
