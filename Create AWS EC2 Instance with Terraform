@@ -1,0 +1,21 @@
+resource "aws_network_interface" "EC2_TF_TEST" {
+  subnet_id   = aws_subnet.Boon_Sub_Prod.id
+  private_ips = ["10.0.1.100"]
+
+  tags = {
+    Name = "primary_network_interface"
+  }
+}
+
+resource "aws_instance" "EC2_TF_TEST" {
+  ami           = "ami-052efd3df9dad4825"
+  instance_type = "t2.micro"
+
+  network_interface {
+    network_interface_id = aws_network_interface.EC2_TF_TEST.id
+    device_index         = 0
+  }
+  tags = {
+    Name = "EC2_TF_TEST"
+  }
+}
