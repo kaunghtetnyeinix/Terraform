@@ -19,3 +19,5 @@ resource "aws_instance" "EC2_TF_TEST" {
     Name = "EC2_TF_TEST"
   }
 }
+#Provision EC2 Instance on AWS
+#Need to check AMI ID
