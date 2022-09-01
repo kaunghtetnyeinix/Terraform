@@ -1,0 +1,27 @@
+provider "aws" {
+  region="us-east-1"
+}
+resource "aws_vpc" "Boon_VPC_Prod" {
+  cidr_block       = "10.0.0.0/16"
+  instance_tenancy = "default"
+
+  tags = {
+    Name = "Boon_VPC_Prod"
+    Location="N.Virginia"
+  }
+}
+resource "aws_subnet" "Boon_Sub_Prod" {
+  vpc_id     = "${aws_vpc.Boon_VPC_Prod.id}"
+  cidr_block = "10.0.1.0/24"
+
+  tags = {
+    Name = "Boon_Sub_Prod"
+  }
+}
+resource "aws_internet_gateway" "gw" {
+  vpc_id = aws_vpc.Boon_VPC_Prod.id
+
+  tags = {
+    Name = "Boon_IGW_Prod"
+  }
+}
