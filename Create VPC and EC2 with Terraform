@@ -11,7 +11,7 @@ resource "aws_vpc" "Production" {
   tags = {
     Name = "Production"
   }
-  provider = aws.uswest                       #alias (for using the same provider with different configurations for different resources)  
+  provider = aws.uswest                       #alias (for using the same provider with different configurations for different resources) - Meta-Arguments
 }
 
 #Create Internet Gateway
