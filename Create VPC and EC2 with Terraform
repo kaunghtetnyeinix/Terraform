@@ -34,7 +34,7 @@ resource "aws_route_table" "prod-rt" {
   }
   route {
     ipv6_cidr_block        = "::/0"
-    gateway_id = aws_egress_only_internet_gateway.example.id
+    gateway_id = aws_internet_gateway.prod-gw.id
   }
   tags = {
     Name = "prod-rt"
