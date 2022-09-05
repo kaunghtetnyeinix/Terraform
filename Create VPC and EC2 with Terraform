@@ -1,0 +1,146 @@
+provider "aws" {
+  region = "us-west-1"
+  alias = "uswest"
+}
+
+#Create VPC
+resource "aws_vpc" "Production" {
+  cidr_block       = "10.0.0.0/16"
+  instance_tenancy = "default"
+
+  tags = {
+    Name = "Production"
+  }
+  provider = aws.uswest                       #alias (for using the same provider with different configurations for different resources)  
+}
+
+#Create Internet Gateway
+resource "aws_internet_gateway" "prod-gw" {
+  vpc_id = aws_vpc.Production.id
+
+  tags = {
+    Name = "prod-gw"
+  }
+  provider = aws.uswest
+}
+
+#Create Route Table 
+resource "aws_route_table" "prod-rt" {
+  vpc_id = aws_vpc.Production.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.prod-gw.id
+  }
+  route {
+    ipv6_cidr_block        = "::/0"
+    gateway_id = aws_egress_only_internet_gateway.example.id
+  }
+  tags = {
+    Name = "prod-rt"
+  }
+  provider = aws.uswest
+}
+
+#Create Subnet
+resource "aws_subnet" "prod-sub-1" {
+  vpc_id     = aws_vpc.Production.id
+  cidr_block = "10.0.1.0/24"
+  availability_zone = "us-west-1a"
+
+  tags = {
+    Name = "prod-sub-1"
+  }
+  provider = aws.uswest
+}
+
+#Route Table Association
+resource "aws_route_table_association" "a" {
+  subnet_id      = aws_subnet.prod-sub-1.id
+  route_table_id = aws_route_table.prod-rt.id
+  provider = aws.uswest
+}
+
+#Create Security Group for EC2 Instance
+resource "aws_security_group" "Allow_Web_Traffic" {
+  name        = "Allow_Web_Traffic"
+  description = "Allow Nginx Web traffic"
+  vpc_id      = aws_vpc.Production.id
+
+  ingress {
+    description      = "HTTPS"
+    from_port        = 443
+    to_port          = 443
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description      = "HTTP"
+    from_port        = 80
+    to_port          = 80
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+  ingress {
+    description      = "SSH"
+    from_port        = 22
+    to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {  
+    Name = "Allow_Web_Traffic"
+  }
+  provider = aws.uswest
+}
+
+#Create Interface within Subnet Range created in Line 45
+resource "aws_network_interface" "web1_prod_uswest-nic" {
+  subnet_id       = aws_subnet.prod-sub-1.id
+  private_ips     = ["10.0.1.50"]
+  security_groups = [aws_security_group.Allow_Web_Traffic.id]
+  provider = aws.uswest
+}
+
+#Assign Elastic IP for EC2 instance
+resource "aws_eip" "one" {
+  vpc                       = true
+  network_interface         = aws_network_interface.web1_prod_uswest-nic.id
+  associate_with_private_ip = "10.0.1.50"
+  depends_on                = [aws_internet_gateway.prod-gw]
+  provider = aws.uswest
+}
+
+#Create EC2 Instance, OS - Ubuntu
+resource "aws_instance" "web1_prod_uswest" {
+  ami           = "ami-085284d24fe829cd0"
+  instance_type = "t2.micro"
+  availability_zone = "us-west-1a"
+  key_name = "khnawscloudlab"
+  
+  network_interface {
+    network_interface_id = aws_network_interface.web1_prod_uswest-nic.id
+    device_index         = 0
+  }
+  user_data = <<-EOF
+              #!/bin/bash
+              sudo apt update -y
+              sudo apt install nginx -y
+              sudo systemctl start nginx
+              sudo systemctl enable nginx
+              sudo bash -c "echo Your Very First Web Server with Terraform > /var/www/html/index.html"
+              EOF
+  tags = {
+    Name = "web1_prod_uswest"
+  }
+  provider = aws.uswest
+}
