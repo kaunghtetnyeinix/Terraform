@@ -144,3 +144,14 @@ resource "aws_instance" "web1_prod_uswest" {
   }
   provider = aws.uswest
 }
+
+#If you want to see Output after issuing "terraform apply"
+output "server_public_IP" {
+  value = aws_eip.one.public_ip  
+}
+output "Instance_ID" {
+  value = aws_instance.web1_prod_uswest.id  
+}
+output "Private_IP_Range" {
+  value = aws_subnet.prod-sub-1.cidr_block
+}
